@@ -101,6 +101,9 @@ resource "google_container_cluster" "primary" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
+  # Enable Dataplane V2
+  datapath_provider = "ADVANCED_DATAPATH"
+
   ip_allocation_policy {
     cluster_secondary_range_name  = "pods"
     services_secondary_range_name = "services"
