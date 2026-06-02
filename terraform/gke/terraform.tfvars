@@ -7,5 +7,5 @@ region       = "us-central1"
 cluster_name = "gke_eighth-physics-169321_us-central1-a_cluster-2"
 domain       = "app.deployhub.com"
 
-github_org  = "ortelius"
-github_repo = "platform-iac"
+github_org  = "Sol-Duara-Inc"
+github_repo = "pdvd-platform"
