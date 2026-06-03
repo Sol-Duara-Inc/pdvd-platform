@@ -36,6 +36,50 @@ ensure_git_identity() {
   exit 1
 }
 
+ensure_gke_flux_kustomization() {
+  local kust="$SCRIPT_DIR/../clusters/gke/flux-system/kustomization.yaml"
+  if grep -q 'ortelius-kustomization.yaml' "$kust" 2>/dev/null; then
+    return 0
+  fi
+  echo "Restoring ortelius-kustomization.yaml in flux-system kustomization (Flux bootstrap overwrite)"
+  cat > "$kust" <<'KUST'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - gotk-components.yaml
+  - gotk-sync.yaml
+  - ortelius-kustomization.yaml
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: kustomize-controller
+        namespace: flux-system
+      spec:
+        template:
+          spec:
+            containers:
+              - name: manager
+                envFrom:
+                  - secretRef:
+                      name: sops-age
+    target:
+      kind: Deployment
+      name: kustomize-controller
+KUST
+  local repo_root
+  repo_root=$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)
+  cd "$repo_root"
+  git add "$kust"
+  if ! git diff --cached --quiet; then
+    ensure_git_identity
+    git commit -m "fix(gke): restore ortelius Flux kustomization after bootstrap"
+    git push origin main
+    echo "✓ flux-system/kustomization.yaml restored and pushed"
+  fi
+}
+
 ensure_tools() {
   if ! command -v age-keygen &>/dev/null; then
     echo "Installing age..."
@@ -427,6 +471,9 @@ case "$ACTION" in
     ;;
   apply)
     terraform apply -auto-approve
+    if [[ "$CLUSTER" == "gke" ]]; then
+      ensure_gke_flux_kustomization
+    fi
     echo ""
     echo "── Outputs ──────────────────────────────"
     terraform output

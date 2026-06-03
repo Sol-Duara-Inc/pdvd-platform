@@ -99,7 +99,8 @@ resource "null_resource" "sops_age_secret_pre_bootstrap" {
 # Step 2: Push Git commits AFTER Flux bootstrap
 resource "null_resource" "sops_yaml_post_bootstrap" {
   triggers = {
-    cluster_name = var.cluster_name
+    cluster_name      = var.cluster_name
+    flux_repo_files   = sha256(jsonencode(flux_bootstrap_git.gke.repository_files))
   }
 
   provisioner "local-exec" {
@@ -139,7 +140,8 @@ SOPS
 
 resource "null_resource" "flux_sops_patch_post_bootstrap" {
   triggers = {
-    cluster_name = var.cluster_name
+    cluster_name    = var.cluster_name
+    flux_repo_files = sha256(jsonencode(flux_bootstrap_git.gke.repository_files))
   }
 
   provisioner "local-exec" {
