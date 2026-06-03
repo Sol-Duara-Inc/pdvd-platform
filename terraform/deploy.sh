@@ -110,17 +110,18 @@ SOPS
 
     read -rp "  smtp.username                : " SMTP_USER
     read -rp "  arangodb.arangodb_pass  : " DB_PASS
-    read -rp "  prtelius.rbac_repo_token : " RBAC_TOKEN
-    read -rp "  prtelius.clientSecret    : " GH_SECRET
-    read -rp "  prtelius.appId           : " GH_APP_ID
-    read -rp "  prtelius.clientId        : " GH_CLIENT_ID
-    read -rp "  prtelius.baseUrl         : " BASE_URL
+    read -rp "  ortelius.rbac_repo_token : " RBAC_TOKEN
+    read -rp "  ortelius.clientSecret    : " GH_SECRET
+    read -rp "  ortelius.appId           : " GH_APP_ID
+    read -rp "  ortelius.clientId        : " GH_CLIENT_ID
+    read -rp "  ortelius.baseUrl         : " BASE_URL
     read -rp "  smtp.password                : " SMTP_PASS
+    BASE_URL="${BASE_URL%"${BASE_URL##*[![:space:]]}"}"
     if [[ -n "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE:-}" && -f "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}" ]]; then
-      echo "  prtelius.privateKey: reading ${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}"
+      echo "  ortelius.privateKey: reading ${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}"
       GH_KEY=$(cat "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}")
     else
-      echo "  prtelius.privateKey:"
+      echo "  ortelius.privateKey:"
       echo "    Option A — path to .pem file:"
       read -rp "    file (or Enter to paste): " GH_KEY_FILE
       if [[ -n "$GH_KEY_FILE" && -f "$GH_KEY_FILE" ]]; then
@@ -133,30 +134,48 @@ SOPS
 
     TMP=$(mktemp --suffix=.yaml)
 
-    # 1. Base secrets for the application (always created)
-    cat > "$TMP" <<YAML
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ortelius-secrets
-  namespace: flux-system
-stringData:
-  values.yaml: |
-    arangodb:
-      arangodb_pass: "${DB_PASS}"
-    prtelius:
-      baseUrl: "${BASE_URL}"
-      rbac_repo_token: "${RBAC_TOKEN}"
-      github:
-        appId: "${GH_APP_ID}"
-        clientId: "${GH_CLIENT_ID}"
-        clientSecret: "${GH_SECRET}"
-        privateKey: |
-$(echo "$GH_KEY" | sed 's/^/          /')
-    smtp:
-      username: "${SMTP_USER}"
-      password: "${SMTP_PASS}"
-YAML
+    if ! command -v jq &>/dev/null; then
+      echo "ERROR: jq is required to build Helm values JSON for ortelius-secrets"
+      exit 1
+    fi
+
+    # Flux HelmRelease valuesFrom (Secret) expects JSON object bytes in values.yaml,
+    # not a nested YAML document (which unmarshals as a string and fails Helm).
+    VALUES_JSON=$(jq -nc \
+      --arg db_pass "$DB_PASS" \
+      --arg base_url "$BASE_URL" \
+      --arg rbac_token "$RBAC_TOKEN" \
+      --arg gh_secret "$GH_SECRET" \
+      --arg gh_app_id "$GH_APP_ID" \
+      --arg gh_client_id "$GH_CLIENT_ID" \
+      --arg gh_key "$GH_KEY" \
+      --arg smtp_user "$SMTP_USER" \
+      --arg smtp_pass "$SMTP_PASS" \
+      '{
+        arangodb: { arangodb_pass: $db_pass },
+        ortelius: {
+          baseUrl: $base_url,
+          rbac_repo_token: $rbac_token,
+          github: {
+            appId: $gh_app_id,
+            clientId: $gh_client_id,
+            clientSecret: $gh_secret,
+            privateKey: $gh_key
+          }
+        },
+        smtp: { username: $smtp_user, password: $smtp_pass }
+      }')
+
+    {
+      echo 'apiVersion: v1'
+      echo 'kind: Secret'
+      echo 'metadata:'
+      echo '  name: ortelius-secrets'
+      echo '  namespace: flux-system'
+      echo 'stringData:'
+      printf '  values.yaml: '
+      printf '%s' "$VALUES_JSON" | jq -Rs .
+    } > "$TMP"
 
     # 2. Conditionally append Cloudflare token for ExternalDNS
     DNS_PROVIDER=$(grep 'dns_provider' "$WORKDIR/terraform.tfvars" | cut -d'"' -f2 || echo "route53")
