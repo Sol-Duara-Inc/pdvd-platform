@@ -166,7 +166,8 @@ YAML
     fi
 
     # 3. Encrypt the combined file
-    sops --encrypt \
+    # Temp file lives under /tmp — skip .sops.yaml path_regex (clusters/gke/...) rules.
+    sops --config /dev/null --encrypt \
       --input-type yaml \
       --output-type yaml \
       --age "$AGE_PUBKEY" \
