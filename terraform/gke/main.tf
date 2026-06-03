@@ -24,6 +24,18 @@ variable "github_token" {
   sensitive   = true
 }
 
+variable "node_count" {
+  description = "Number of nodes in the default node pool"
+  type        = number
+  default     = 2
+}
+
+variable "node_disk_size_gb" {
+  description = "Boot disk size (GB) per node; counts toward regional SSD_TOTAL_GB quota"
+  type        = number
+  default     = 100
+}
+
 # ── Providers ─────────────────────────────────────────────────────────────────
 provider "google" {
   project = var.project_id

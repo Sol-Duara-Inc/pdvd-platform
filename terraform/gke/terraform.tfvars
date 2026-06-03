@@ -10,3 +10,7 @@ static_ip_name     = "ortelius-gke-ip"
 
 github_org  = "Sol-Duara-Inc"
 github_repo = "pdvd-platform"
+
+# POC project hits SSD_TOTAL_GB=500 in us-central1; keep footprint small.
+node_count        = 1
+node_disk_size_gb = 50
