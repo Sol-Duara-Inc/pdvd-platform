@@ -96,8 +96,20 @@ SOPS
     read -rp "  prtelius.clientId        : " GH_CLIENT_ID
     read -rp "  prtelius.baseUrl         : " BASE_URL
     read -rp "  smtp.password                : " SMTP_PASS
-    echo "  prtelius.privateKey (Paste PEM block, then press Ctrl-D on a new line):"
-    GH_KEY=$(cat)
+    if [[ -n "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE:-}" && -f "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}" ]]; then
+      echo "  prtelius.privateKey: reading ${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}"
+      GH_KEY=$(cat "${ORTELIUS_GITHUB_PRIVATE_KEY_FILE}")
+    else
+      echo "  prtelius.privateKey:"
+      echo "    Option A — path to .pem file:"
+      read -rp "    file (or Enter to paste): " GH_KEY_FILE
+      if [[ -n "$GH_KEY_FILE" && -f "$GH_KEY_FILE" ]]; then
+        GH_KEY=$(cat "$GH_KEY_FILE")
+      else
+        echo "    Option B — paste PEM, then press Enter twice, then Ctrl+D:"
+        GH_KEY=$(cat)
+      fi
+    fi
 
     TMP=$(mktemp --suffix=.yaml)
 
