@@ -85,11 +85,6 @@ resource "google_compute_subnetwork" "subnet" {
   }
 }
 
-# ── Static IP for GLB ─────────────────────────────────────────────────────────
-resource "google_compute_global_address" "app" {
-  name = "static-app-ip"
-}
-
 # ── GKE Cluster ───────────────────────────────────────────────────────────────
 resource "google_container_cluster" "primary" {
   name     = var.cluster_name
@@ -163,4 +158,3 @@ resource "flux_bootstrap_git" "gke" {
 # ── Outputs ───────────────────────────────────────────────────────────────────
 output "cluster_name"     { value = google_container_cluster.primary.name }
 output "cluster_endpoint" { value = google_container_cluster.primary.endpoint }
-output "static_ip"        { value = google_compute_global_address.app.address }

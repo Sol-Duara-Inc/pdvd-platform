@@ -64,6 +64,10 @@ terraform apply \
 8. Workload Identity binding created so `kustomize-controller` can impersonate
    the GCP SA (binding waits for Flux bootstrap to create the SA)
 
+**Ingress & DNS** — `terraform/gke/ingress.tf` writes `clusters/gke/ortelius/values.yaml` with
+`frontend.ingress.host`, `frontend.ingress.staticIP`, and creates a global IP plus optional
+Cloud DNS A record (`domain`, `dns_managed_zone`, `static_ip_name` in `terraform.tfvars`).
+
 **After apply** — copy outputs into `clusters/gke/flux-system/kustomization.yaml`:
 ```yaml
 patches:
@@ -162,6 +166,8 @@ creation_rules:
 |--------|---------|
 | `flux_sops_sa` (GKE) | `kustomize-controller` SA annotation |
 | `kms_key_id` (GKE) | `.sops.yaml` `gcp_kms` |
+| `static_ip` / `static_ip_name` (GKE) | Cloud DNS A record; `frontend.ingress.staticIP` |
+| `domain` / `ortelius_url` (GKE) | `frontend.ingress.host`, API URLs, GitHub OAuth baseUrl |
 | `flux_sops_role_arn` (EKS) | `kustomize-controller` SA annotation |
 | `kms_key_arn` (EKS) | `.sops.yaml` `aws_kms` |
 | `acm_certificate_arn` (EKS) | `clusters/eks/ortelius/values.yaml` `ingress.certificateArn` |

@@ -376,6 +376,19 @@ case "$ACTION" in
       echo "║  ExternalDNS will now map ALB to: https://$DOMAIN"
       echo "╚══════════════════════════════════════════════════════════════╝"
     fi
+
+    if [[ "$CLUSTER" == "gke" ]]; then
+      DOMAIN=$(grep '^domain' "$WORKDIR/terraform.tfvars" | cut -d'"' -f2)
+      STATIC_IP=$(terraform output -raw static_ip 2>/dev/null || true)
+      echo "╔══════════════════════════════════════════════════════════════╗"
+      echo "║  GKE Ingress (GLB + ManagedCertificate)                      ║"
+      echo "╠══════════════════════════════════════════════════════════════╣"
+      echo "║  URL     : https://$DOMAIN"
+      echo "║  Static IP: ${STATIC_IP:-see: terraform output static_ip}"
+      echo "║  DNS     : A record managed by Terraform when dns_managed_zone is set"
+      echo "║  Cert    : Provisioning may take up to 60 minutes after DNS propagates"
+      echo "╚══════════════════════════════════════════════════════════════╝"
+    fi
     ;;
   destroy)
     drain_flux_workloads
