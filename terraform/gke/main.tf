@@ -140,6 +140,12 @@ resource "google_container_node_pool" "default" {
       mode = "GKE_METADATA"
     }
   }
+
+  # Explicit — separate node pools do not reliably inherit cluster private-node
+  # settings; omitting this can request external IPs and hit vmExternalIpAccess.
+  network_config {
+    enable_private_nodes = true
+  }
 }
 
 # ── Flux Bootstrap ────────────────────────────────────────────────────────────
