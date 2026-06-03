@@ -20,6 +20,22 @@ CLUSTER_NAME=$(grep 'cluster_name' "$WORKDIR/terraform.tfvars" | cut -d'"' -f2)
 SECRETS_OUT="$SCRIPT_DIR/../clusters/$CLUSTER/ortelius/secrets.enc.yaml"
 KEY_FILE="$HOME/.ssh/${CLUSTER_NAME}.sops.key"
 
+ensure_git_identity() {
+  if git var GIT_COMMITTER_IDENT >/dev/null 2>&1; then
+    return 0
+  fi
+  if [[ -n "${GIT_AUTHOR_NAME:-}" && -n "${GIT_AUTHOR_EMAIL:-}" ]]; then
+    export GIT_COMMITTER_NAME="${GIT_COMMITTER_NAME:-$GIT_AUTHOR_NAME}"
+    export GIT_COMMITTER_EMAIL="${GIT_COMMITTER_EMAIL:-$GIT_AUTHOR_EMAIL}"
+    return 0
+  fi
+  echo "ERROR: Git author identity is not configured."
+  echo "  export GIT_AUTHOR_NAME=\"Your Name\""
+  echo "  export GIT_AUTHOR_EMAIL=\"you@company.com\""
+  echo "Then re-run this script (secrets are already encrypted locally if setup completed)."
+  exit 1
+}
+
 ensure_tools() {
   if ! command -v age-keygen &>/dev/null; then
     echo "Installing age..."
@@ -85,7 +101,11 @@ creation_rules:
     age: $AGE_PUBKEY
 SOPS
 
-  if [ ! -f "$SECRETS_OUT" ]; then
+  if [ ! -s "$SECRETS_OUT" ] || ! grep -q '^sops:' "$SECRETS_OUT" 2>/dev/null; then
+    if [ -f "$SECRETS_OUT" ]; then
+      echo "WARNING: $SECRETS_OUT is empty or invalid — regenerating"
+      rm -f "$SECRETS_OUT"
+    fi
     echo "--- Interactive Secret Setup for $CLUSTER ---"
 
     read -rp "  smtp.username                : " SMTP_USER
@@ -183,6 +203,7 @@ YAML
     cd "$REPO_ROOT"
     git add clusters/.sops.yaml "$SECRETS_OUT"
     if ! git diff --cached --quiet; then
+      ensure_git_identity
       git commit -m "chore($CLUSTER): add encrypted secrets and sops config"
       git push --set-upstream origin main
       echo "✓ Secrets committed and pushed"
