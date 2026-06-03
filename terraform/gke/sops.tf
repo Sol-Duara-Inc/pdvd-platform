@@ -153,6 +153,7 @@ kind: Kustomization
 resources:
   - gotk-components.yaml
   - gotk-sync.yaml
+  - ortelius-kustomization.yaml
 patches:
   - patch: |
       apiVersion: apps/v1
