@@ -54,7 +54,13 @@ ensure_secrets() {
   ensure_tools
 
   if [ ! -f "$KEY_FILE" ]; then
-    EKS_KEY=$(ls "$HOME"/.ssh/*eks*.sops.key 2>/dev/null | head -n 1)
+    EKS_KEY=""
+    shopt -s nullglob
+    for candidate in "$HOME"/.ssh/*eks*.sops.key; do
+      EKS_KEY=$candidate
+      break
+    done
+    shopt -u nullglob
     if [ -n "$EKS_KEY" ]; then
       echo "Found existing AWS age key ($EKS_KEY). Copying to $KEY_FILE..."
       cp "$EKS_KEY" "$KEY_FILE"
@@ -65,6 +71,10 @@ ensure_secrets() {
   fi
 
   AGE_PUBKEY=$(grep "^# public key:" "$KEY_FILE" | awk '{print $4}')
+  if [[ -z "$AGE_PUBKEY" ]]; then
+    echo "ERROR: could not read age public key from $KEY_FILE"
+    exit 1
+  fi
 
   # Always write .sops.yaml so it stays in sync with the current key
   cat > "$SCRIPT_DIR/../clusters/.sops.yaml" <<SOPS
