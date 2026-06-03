@@ -143,11 +143,12 @@ resource "google_container_node_pool" "default" {
   name       = "default"
   location   = var.region
   cluster    = google_container_cluster.primary.name
-  node_count = 2
+  node_count = var.node_count
 
   node_config {
-    machine_type = "e2-standard-2"
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+    machine_type  = "e2-standard-2"
+    disk_size_gb  = var.node_disk_size_gb
+    oauth_scopes  = ["https://www.googleapis.com/auth/cloud-platform"]
     workload_metadata_config {
       mode = "GKE_METADATA"
     }
