@@ -4,14 +4,6 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
-    github = {
-      source  = "integrations/github"
-      version = "~> 6.0"
-    }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
     flux = {
       source  = "fluxcd/flux"
       version = "~> 1.3"
@@ -20,14 +12,14 @@ terraform {
 }
 
 # ── Variables ─────────────────────────────────────────────────────────────────
-variable "project_id"   { default = "eighth-physics-169321" }
-variable "region"       { default = "us-central1" }
+variable "project_id" { default = "eighth-physics-169321" }
+variable "region" { default = "us-central1" }
 variable "cluster_name" { default = "ortelius-gke" }
 
-variable "github_org"  { default = "ortelius" }
+variable "github_org" { default = "ortelius" }
 variable "github_repo" { default = "platform-iac" }
 variable "github_token" {
-  description = "GitHub PAT with repo + admin:public_key scopes"
+  description = "GitHub PAT with repo scope (read/write for Flux GitOps pushes)"
   type        = string
   sensitive   = true
 }
@@ -36,11 +28,6 @@ variable "github_token" {
 provider "google" {
   project = var.project_id
   region  = var.region
-}
-
-provider "github" {
-  owner = var.github_org
-  token = var.github_token
 }
 
 # GCP access token is used by the flux kubernetes provider
@@ -55,10 +42,10 @@ provider "flux" {
     )
   }
   git = {
-    url = "ssh://git@github.com/${var.github_org}/${var.github_repo}.git"
-    ssh = {
-      username    = "git"
-      private_key = tls_private_key.flux.private_key_pem
+    url = "https://github.com/${var.github_org}/${var.github_repo}.git"
+    http = {
+      username = "git"
+      password = var.github_token
     }
   }
 }
@@ -74,6 +61,9 @@ resource "google_compute_subnetwork" "subnet" {
   region        = var.region
   network       = google_compute_network.vpc.id
   ip_cidr_range = "10.0.0.0/16"
+
+  # Required for private nodes (no external IP) to reach Google APIs.
+  private_ip_google_access = true
 
   secondary_ip_range {
     range_name    = "pods"
@@ -96,6 +86,8 @@ resource "google_container_cluster" "primary" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
+  depends_on = [google_compute_router_nat.nat]
+
   # Enable Dataplane V2
   datapath_provider = "ADVANCED_DATAPATH"
 
@@ -106,6 +98,32 @@ resource "google_container_cluster" "primary" {
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
+  }
+
+  # Org policy constraints/compute.vmExternalIpAccess blocks node external IPs.
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = false
+    master_ipv4_cidr_block  = "172.16.0.32/28"
+  }
+}
+
+resource "google_compute_router" "router" {
+  name    = "${var.cluster_name}-router"
+  region  = var.region
+  network = google_compute_network.vpc.id
+}
+
+resource "google_compute_router_nat" "nat" {
+  name                               = "${var.cluster_name}-nat"
+  router                             = google_compute_router.router.name
+  region                             = var.region
+  nat_ip_allocate_option             = "AUTO_ONLY"
+  source_subnetwork_ip_ranges_to_nat = "ALL_SUBNETWORKS_ALL_IP_RANGES"
+
+  log_config {
+    enable = true
+    filter = "ERRORS_ONLY"
   }
 }
 
@@ -125,21 +143,7 @@ resource "google_container_node_pool" "default" {
 }
 
 # ── Flux Bootstrap ────────────────────────────────────────────────────────────
-# Terraform generates an ECDSA key pair.
-# Public key → GitHub deploy key (write access so Flux can push gotk-components).
-# Private key → stored as the flux-system Secret inside the cluster by flux_bootstrap_git.
-resource "tls_private_key" "flux" {
-  algorithm   = "ECDSA"
-  ecdsa_curve = "P384"
-}
-
-resource "github_repository_deploy_key" "flux_gke" {
-  title      = "flux-gke"
-  repository = var.github_repo
-  key        = tls_private_key.flux.public_key_openssh
-  read_only  = false
-}
-
+# Uses HTTPS + PAT (deploy keys disabled on Sol-Duara-Inc/pdvd-platform).
 resource "flux_bootstrap_git" "gke" {
   # Flux will install its components into clusters/gke/flux-system/
   # and watch clusters/gke/ for workload kustomizations
@@ -150,11 +154,10 @@ resource "flux_bootstrap_git" "gke" {
   # Ensure the cluster nodes are up and the deploy key exists before bootstrapping
   depends_on = [
     google_container_node_pool.default,
-    github_repository_deploy_key.flux_gke,
     null_resource.sops_age_secret_pre_bootstrap # ENFORCES SECRET INJECTION BEFORE BOOTSTRAP
   ]
 }
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
-output "cluster_name"     { value = google_container_cluster.primary.name }
+output "cluster_name" { value = google_container_cluster.primary.name }
 output "cluster_endpoint" { value = google_container_cluster.primary.endpoint }
