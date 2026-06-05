@@ -24,7 +24,7 @@ ortelius:
     enabled: true
     host: "smtp.gmail.com"
     port: "587"
-    fromEmail: "noreply@solduara.com"
+    fromEmail: "noreply@dev.solduara.com"
     fromName: "Ortelius"
 
 arangodb:
