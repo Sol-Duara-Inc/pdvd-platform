@@ -3,20 +3,20 @@
 # Secrets: clusters/gke/ortelius/secrets.enc.yaml
 
 frontend:
-  graphqlEndpoint: "https://ortelius.junctionbox.dev.solduara.com/api/v1/graphql"
-  restapiEndpoint: "https://ortelius.junctionbox.dev.solduara.com/api/v1"
+  graphqlEndpoint: "https://ortelius.dev.solduara.com/api/v1/graphql"
+  restapiEndpoint: "https://ortelius.dev.solduara.com/api/v1"
   ingress:
     enabled: true
     type: glb
-    host: ortelius.junctionbox.dev.solduara.com
+    host: ortelius.dev.solduara.com
     staticIP: ortelius-gke-ip
 
 ortelius:
   ingress:
     type: glb
   rbac_repo: "https://github.com/ortelius/pdvd-rbac.git"
-  apiBaseUrl: "https://ortelius.junctionbox.dev.solduara.com"
-  baseUrl: "https://ortelius.junctionbox.dev.solduara.com"
+  apiBaseUrl: "https://ortelius.dev.solduara.com"
+  baseUrl: "https://ortelius.dev.solduara.com"
   github:
     appName: ortelius
     org: Sol-Duara-Inc
@@ -24,7 +24,7 @@ ortelius:
     enabled: true
     host: "smtp.gmail.com"
     port: "587"
-    fromEmail: "noreply@solduara.com"
+    fromEmail: "noreply@dev.solduara.com"
     fromName: "Ortelius"
 
 arangodb:

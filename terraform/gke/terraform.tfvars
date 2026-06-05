@@ -4,7 +4,7 @@
 project_id         = "cs-poc-byzydokth1uym6142bdtqml"
 region             = "us-central1"
 cluster_name       = "ortelius-poc-gke"
-domain             = "ortelius.junctionbox.dev.solduara.com"
+domain             = "ortelius.dev.solduara.com"
 dns_managed_zone   = "dev"
 static_ip_name     = "ortelius-gke-ip"
 
