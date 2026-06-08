@@ -164,9 +164,9 @@ resource "google_container_node_pool" "default" {
 # ── Flux Bootstrap ────────────────────────────────────────────────────────────
 # Uses HTTPS + PAT (deploy keys disabled on Sol-Duara-Inc/pdvd-platform).
 resource "flux_bootstrap_git" "gke" {
-  # Flux will install its components into clusters/gke/flux-system/
-  # and watch clusters/gke/ for workload kustomizations
-  path = "clusters/gke"
+  # Manifests live under clusters/gke/flux-system/; sync path must match
+  # gotk-sync.yaml (./clusters/gke/flux-system) and ortelius-kustomization.yaml.
+  path = "clusters/gke/flux-system"
 
   components_extra = ["image-reflector-controller", "image-automation-controller"]
 
