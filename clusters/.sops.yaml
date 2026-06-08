@@ -1,5 +1,5 @@
 creation_rules:
-  - path_regex: clusters/eks/.*\.yaml931147
+  - path_regex: clusters/eks/.*\.yaml$
     age: age12hv2hxsze6ds8ysef59hmzd276fzfvly9e2dg5hvrcephy3lwynsxjwrzn
-  - path_regex: clusters/gke/.*\.yaml931147
+  - path_regex: clusters/gke/.*\.yaml$
     age: age12hv2hxsze6ds8ysef59hmzd276fzfvly9e2dg5hvrcephy3lwynsxjwrzn
