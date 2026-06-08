@@ -111,7 +111,7 @@ Create or update in GitHub → Developer settings:
 - Homepage: `https://ortelius.dev.solduara.com`
 - Callback: per your OAuth app / Ortelius docs
 
-Have ready: ArangoDB password, SMTP (or POC dummy), GitHub App ID/secret/private key, PAT for `ortelius/pdvd-rbac` (read).
+Have ready: ArangoDB password, SMTP (or POC dummy), GitHub App ID/secret/private key, PAT for `Sol-Duara-Inc/pdvd-rbac` (write).
 
 ### Verify tools
 
@@ -139,13 +139,26 @@ On first `gke apply`, `deploy.sh` prompts for secrets. Use:
 | Prompt | Value |
 |--------|--------|
 | `prtelius.baseUrl` | `https://ortelius.dev.solduara.com` |
-| `prtelius.rbac_repo_token` | PAT with `repo` scope (`ortelius/pdvd-rbac` or your fork) |
+| `ortelius.rbac_repo_token` | PAT with `repo` scope and **push** access to `Sol-Duara-Inc/pdvd-rbac` |
 
 Back up the age key from the bastion (copy to secure storage):
 
 ```bash
 ls -la ~/.ssh/ortelius-poc-gke.sops.key
 chmod 600 ~/.ssh/ortelius-poc-gke.sops.key
+```
+
+### Existing cluster — rotate RBAC repo token
+
+If `secrets.enc.yaml` already exists, update only `ortelius.rbac_repo_token` (PAT with **push** to `Sol-Duara-Inc/pdvd-rbac`) on the bastion that holds `~/.ssh/ortelius-poc-gke.sops.key`:
+
+```bash
+cd ~/pdvd-platform
+sops clusters/gke/ortelius/secrets.enc.yaml   # edit ortelius.rbac_repo_token in values.yaml JSON
+git add clusters/gke/ortelius/secrets.enc.yaml
+git commit -m "fix: rbac token for Sol-Duara-Inc/pdvd-rbac"
+git push origin main
+kubectl rollout restart deployment -n ortelius -l app=ortelius
 ```
 
 ---

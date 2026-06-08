@@ -26,3 +26,5 @@ Thumbs.db               # Windows
 
 # Optional: lock file (commit if you want version consistency)
 # terraform.lock.hcl    # Keep this commented if you want to commit it
+
+.cursor

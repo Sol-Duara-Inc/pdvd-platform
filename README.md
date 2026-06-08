@@ -85,7 +85,7 @@ On the **first run**, `deploy.sh` generates an age encryption keypair and then p
 |---|---|
 | `smtp.username` | SMTP email address for outbound mail |
 | `arangodb.arangodb_pass` | ArangoDB root password |
-| `prtelius.rbac_repo_token` | GitHub PAT for the RBAC config repo |
+| `ortelius.rbac_repo_token` | GitHub PAT with push access to `<github_org>/pdvd-rbac` |
 | `prtelius.clientSecret` | GitHub OAuth app client secret |
 | `prtelius.appId` | GitHub App ID |
 | `prtelius.clientId` | GitHub OAuth app client ID |

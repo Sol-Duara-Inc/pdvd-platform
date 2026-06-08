@@ -59,7 +59,7 @@ resource "local_file" "ortelius_values" {
     ortelius:
       ingress:
         type: glb
-      rbac_repo: "https://github.com/ortelius/pdvd-rbac.git"
+      rbac_repo: "https://github.com/${var.github_org}/pdvd-rbac.git"
       apiBaseUrl: "https://${var.domain}"
       baseUrl: "https://${var.domain}"
       github:

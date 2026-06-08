@@ -14,7 +14,7 @@ frontend:
 ortelius:
   ingress:
     type: glb
-  rbac_repo: "https://github.com/ortelius/pdvd-rbac.git"
+  rbac_repo: "https://github.com/Sol-Duara-Inc/pdvd-rbac.git"
   apiBaseUrl: "https://ortelius.dev.solduara.com"
   baseUrl: "https://ortelius.dev.solduara.com"
   github:
