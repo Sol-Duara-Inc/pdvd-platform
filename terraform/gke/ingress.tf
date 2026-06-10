@@ -63,7 +63,7 @@ resource "local_file" "ortelius_values" {
       apiBaseUrl: "https://${var.domain}"
       baseUrl: "https://${var.domain}"
       github:
-        appName: ortelius
+        appName: ortelius-sol-duara-dev
         org: ${var.github_org}
       smtp:
         enabled: true

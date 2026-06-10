@@ -205,9 +205,9 @@ SOPS
             clientId: $gh_client_id,
             clientSecret: $gh_secret,
             privateKey: $gh_key
-          }
-        },
-        smtp: { username: $smtp_user, password: $smtp_pass }
+          },
+          smtp: { username: $smtp_user, password: $smtp_pass }
+        }
       }')
 
     {
